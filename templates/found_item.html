@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Found an Item{% endblock %}
+{% block content %}
+<h2>Report Found Item</h2>
+<form method="post" action="/found" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label class="form-label">Upload Image</label>
+    <input type="file" name="image" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Suggested Label</label>
+    <input type="text" name="label" class="form-control">
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Found At (Location)</label>
+    <input type="text" name="found_at" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Submit To (optional user_id)</label>
+    <input type="text" name="submit_to" class="form-control">
+  </div>
+  <button class="btn btn-success">Submit</button>
+</form>
+{% endblock %}

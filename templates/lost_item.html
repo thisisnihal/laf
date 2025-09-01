@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Lost an Item{% endblock %}
+{% block content %}
+<h2>Report Lost Item</h2>
+<form method="post" action="/lost" enctype="multipart/form-data">
+  <div class="mb-3">
+    <label class="form-label">Label</label>
+    <input type="text" name="label" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Upload Image</label>
+    <input type="file" name="image" class="form-control" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Lost At (Location)</label>
+    <input type="text" name="lost_at" class="form-control" required>
+  </div>
+  <button class="btn btn-danger">Submit</button>
+</form>
+{% endblock %}
