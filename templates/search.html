@@ -1,31 +1,79 @@
 {% extends "base.html" %}
-{% block title %}Search Items{% endblock %}
+
+{% block title %}Search Items - Lost & Found{% endblock %}
+
 {% block content %}
-<h2>Search Items</h2>
-<form method="get" action="/search">
-  <div class="mb-3">
-    <label class="form-label">Label</label>
-    <input type="text" name="label" class="form-control" value="{{ label }}">
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Search Radius (km)</label>
-    <input type="number" name="radius" class="form-control" value="{{ radius|default(1) }}">
-  </div>
-  <button class="btn btn-info">Search</button>
-</form>
-<hr>
-<h3>Results</h3>
 <div class="row">
-  {% for item in results %}
-  <div class="col-md-3">
-    <div class="card mb-3">
-      <img src="{{ item.image_url }}" class="card-img-top" alt="{{ item.label }}">
-      <div class="card-body">
-        <h5 class="card-title">{{ item.label }}</h5>
-        <p class="card-text">Found at: {{ item.found_at }}</p>
-      </div>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fas fa-search"></i> Search Found Items</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" id="searchForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="query" class="form-label">Search for item *</label>
+                                <input type="text" class="form-control" id="query" name="query" 
+                                       value="{% if search_item %}{{ search_item.label }}{% endif %}" 
+                                       placeholder="e.g., wallet, phone, keys" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="radius" class="form-label">Search Radius (km)</label>
+                                <input type="number" class="form-control" id="radius" name="radius" 
+                                       value="1" min="0.1" max="50" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label class="form-label">Location</label>
+                                <button type="button" class="btn btn-outline-secondary w-100" id="detectLocationBtn">
+                                    <i class="fas fa-crosshairs"></i> Use Current
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" id="lat" name="lat">
+                    <input type="hidden" id="lon" name="lon">
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search Found Items
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
-  </div>
-  {% endfor %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('detectLocationBtn').addEventListener('click', function() {
+    getCurrentLocation(function(lat, lon) {
+        if (lat && lon) {
+            document.getElementById('lat').value = lat;
+            document.getElementById('lon').value = lon;
+            this.innerHTML = '<i class="fas fa-check text-success"></i> Location Set';
+            this.classList.add('btn-success');
+            this.classList.remove('btn-outline-secondary');
+        } else {
+            alert('Unable to detect your location. Please try again.');
+        }
+    }.bind(this));
+});
+
+// Auto-detect location on page load
+document.addEventListener('DOMContentLoaded', function() {
+    getCurrentLocation(function(lat, lon) {
+        if (lat && lon) {
+            document.getElementById('lat').value = lat;
+            document.getElementById('lon').value = lon;
+        }
+    });
+});
+</script>
 {% endblock %}

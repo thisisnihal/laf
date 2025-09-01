@@ -1,20 +1,101 @@
 {% extends "base.html" %}
-{% block title %}Lost an Item{% endblock %}
+
+{% block title %}Report Lost Item - Lost & Found{% endblock %}
+
 {% block content %}
-<h2>Report Lost Item</h2>
-<form method="post" action="/lost" enctype="multipart/form-data">
-  <div class="mb-3">
-    <label class="form-label">Label</label>
-    <input type="text" name="label" class="form-control" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Upload Image</label>
-    <input type="file" name="image" class="form-control" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Lost At (Location)</label>
-    <input type="text" name="lost_at" class="form-control" required>
-  </div>
-  <button class="btn btn-danger">Submit</button>
-</form>
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title mb-0"><i class="fas fa-exclamation-triangle text-warning"></i> Report Lost Item</h3>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="lostItemForm">
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Item Photo *</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+                        <div class="form-text">Upload a clear photo of the lost item</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="label" class="form-label">Item Description *</label>
+                        <input type="text" class="form-control" id="label" name="label" required>
+                        <div id="ai-suggestion" class="form-text text-info" style="display: none;">
+                            <i class="fas fa-robot"></i> AI Suggestion: <span id="predicted-label"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="lost_location" class="form-label">Where did you lose it? *</label>
+                        <input type="text" class="form-control location-input" id="lost_location" name="lost_location" 
+                               placeholder="e.g., Central Park, New York" required>
+                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="detectLocationBtn">
+                            <i class="fas fa-crosshairs"></i> Use Current Location
+                        </button>
+                        <input type="hidden" id="lost_lat" name="lost_lat">
+                        <input type="hidden" id="lost_lon" name="lost_lon">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="lost_date_time" class="form-label">When did you lose it? *</label>
+                        <input type="datetime-local" class="form-control" id="lost_date_time" name="lost_date_time" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="fas fa-exclamation-triangle"></i> Report Lost Item
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('detectLocationBtn').addEventListener('click', function() {
+    getCurrentLocation(function(lat, lon) {
+        if (lat && lon) {
+            document.getElementById('lost_lat').value = lat;
+            document.getElementById('lost_lon').value = lon;
+            
+            // Reverse geocoding (simplified)
+            document.getElementById('lost_location').value = `Location: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+        } else {
+            alert('Unable to detect your location. Please enter manually.');
+        }
+    });
+});
+
+// AI prediction for image
+document.getElementById('image').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        try {
+            const response = await fetch('/predict-label', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.predicted_label && result.predicted_label !== 'unknown') {
+                document.getElementById('predicted-label').textContent = 
+                    `${result.predicted_label} (${(result.confidence * 100).toFixed(1)}% confidence)`;
+                document.getElementById('ai-suggestion').style.display = 'block';
+                
+                // Auto-fill if label is empty
+                const labelInput = document.getElementById('label');
+                if (!labelInput.value) {
+                    labelInput.value = result.predicted_label;
+                }
+            }
+        } catch (error) {
+            console.error('Error getting AI prediction:', error);
+        }
+    }
+});
+</script>
 {% endblock %}

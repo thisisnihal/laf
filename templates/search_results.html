@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - Lost & Found{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3><i class="fas fa-search"></i> Search Results</h3>
+            <a href="/search" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> New Search
+            </a>
+        </div>
+        
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            Found {{ items|length }} items matching "{{ query }}" within {{ radius }} km
+        </div>
+        
+        {% if items %}
+            <div class="row">
+                {% for item in items %}
+                <div class="col-md-4 mb-4">
+                    <div class="card item-card">
+                        <div class="position-relative">
+                            <img src="{{ item.image_url }}" class="card-img-top item-image" alt="{{ item.label }}">
+                            <span class="badge bg-info distance-badge">{{ item.distance }} km away</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.label }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> Found at: {{ item.found_at }}<br>
+                                    <i class="fas fa-calendar"></i> {{ item.found_at_date_time }}
+                                </small>
+                            </p>
+                            {% if item.predicted_label %}
+                                <p class="card-text">
+                                    <small class="text-info">
+                                        <i class="fas fa-robot"></i> AI detected: {{ item.predicted_label }}
+                                    </small>
+                                </p>
+                            {% endif %}
+                            {% if item.finder_phone %}
+                                <div class="mt-3">
+                                    <strong>Contact Finder:</strong><br>
+                                    <a href="tel:{{ item.finder_phone }}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-phone"></i> {{ item.finder_phone }}
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No matching items found</h4>
+                <p class="text-muted">Try adjusting your search terms or increasing the search radius</p>
+                <a href="/search" class="btn btn-primary">Try Another Search</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

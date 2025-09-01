@@ -1,29 +1,178 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
-{% block content %}
-<h3>Your Items</h3>
-<div class="row">
-    {% for item in items %}
-    <div class="col-md-4">
-        <div class="card mb-3">
-            <img src="{{ item.image_url }}" class="card-img-top" alt="{{ item.label }}" />
-            <div class="card-body">
-                <h5 class="card-title">{{ item.label }}</h5>
-                <p class="card-text">
-                    Status: {{ item.status }} <br />
-                    Location: {{ item.lost_at or item.found_at }} <br />
-                    Submitted: {{ item.submit_at_date_time }}
-                </p>
-                <a href="/match/{{ item._id }}" class="btn btn-sm btn-warning">Search Similar Nearby</a>
-                {% if item.similarity_score %}
-                <p>Similarity: {{ item.similarity_score }} | Distance: {{ item.distance_km }} km</p>
-                {% endif %}
 
-                <button class="btn btn-sm btn-success">Mark Resolved</button>
-            </div>
-        </div>
+{% block title %}Dashboard - Lost & Found{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-tachometer-alt"></i> Your Dashboard</h2>
+        <p class="text-muted">Manage your lost and found items</p>
     </div>
-    {% endfor %}
 </div>
 
+<!-- Lost Items -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h4><i class="fas fa-exclamation-triangle text-warning"></i> Your Lost Items</h4>
+        {% if lost_items %}
+            <div class="row">
+                {% for item in lost_items %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <img src="{{ item.image_url }}" class="card-img-top item-image" alt="{{ item.label }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.label }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> {{ item.lost_at }}<br>
+                                    <i class="fas fa-calendar"></i> {{ item.lost_at_date_time }}
+                                </small>
+                            </p>
+                            <div class="d-grid gap-2">
+                                <a href="/search?item_id={{ item._id }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-search"></i> Search Similar
+                                </a>
+                                {% if not item.resolved %}
+                                <button class="btn btn-success btn-sm resolve-btn" data-item-id="{{ item._id }}">
+                                    <i class="fas fa-check"></i> Mark as Found
+                                </button>
+                                {% else %}
+                                <span class="badge bg-success">Resolved</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> You haven't reported any lost items yet. 
+                <a href="/lost-item">Report a lost item</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Found Items -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h4><i class="fas fa-check-circle text-success"></i> Items You've Found</h4>
+        {% if found_items %}
+            <div class="row">
+                {% for item in found_items %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <img src="{{ item.image_url }}" class="card-img-top item-image" alt="{{ item.label }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.label }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> Found at: {{ item.found_at }}<br>
+                                    <i class="fas fa-calendar"></i> {{ item.found_at_date_time }}
+                                </small>
+                            </p>
+                            {% if not item.resolved %}
+                            <button class="btn btn-success btn-sm resolve-btn" data-item-id="{{ item._id }}">
+                                <i class="fas fa-check"></i> Mark as Resolved
+                            </button>
+                            {% else %}
+                            <span class="badge bg-success">Resolved</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> You haven't reported any found items yet. 
+                <a href="/found-item">Report a found item</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Submitted Items -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h4><i class="fas fa-paper-plane text-info"></i> Items Submitted to You</h4>
+        {% if submitted_items %}
+            <div class="row">
+                {% for item in submitted_items %}
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <img src="{{ item.image_url }}" class="card-img-top item-image" alt="{{ item.label }}">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ item.label }}</h5>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt"></i> Found at: {{ item.found_at }}<br>
+                                    <i class="fas fa-calendar"></i> {{ item.found_at_date_time }}
+                                </small>
+                            </p>
+                            {% if item.finder_phone %}
+                            <p class="card-text">
+                                <strong>Finder's Phone:</strong> 
+                                <a href="tel:{{ item.finder_phone }}">{{ item.finder_phone }}</a>
+                            </p>
+                            {% endif %}
+                            {% if item.submit_at %}
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-handshake"></i> Submitted at: {{ item.submit_at }}
+                                </small>
+                            </p>
+                            {% endif %}
+                            {% if not item.resolved %}
+                            <button class="btn btn-success btn-sm resolve-btn" data-item-id="{{ item._id }}">
+                                <i class="fas fa-check"></i> Mark as Resolved
+                            </button>
+                            {% else %}
+                            <span class="badge bg-success">Resolved</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> No items have been submitted to you yet.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Resolve item functionality
+document.querySelectorAll('.resolve-btn').forEach(button => {
+    button.addEventListener('click', async function() {
+        const itemId = this.getAttribute('data-item-id');
+        
+        if (confirm('Are you sure you want to mark this item as resolved?')) {
+            try {
+                const response = await fetch(`/resolve-item/${itemId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert('Error resolving item: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error resolving item');
+                console.error(error);
+            }
+        }
+    });
+});
+</script>
 {% endblock %}
