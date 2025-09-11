@@ -1,3 +1,4 @@
+<!-- templates/dashboard.html -->
 {% extends "base.html" %}
 
 {% block title %}Dashboard - Lost & Found{% endblock %}
@@ -24,7 +25,15 @@
                             <h5 class="card-title">{{ item.label }}</h5>
                             <p class="card-text">
                                 <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt"></i> {{ item.lost_at }}<br>
+                                    <i class="fas fa-map-marker-alt"></i> 
+                                    {% if item.lost_lat and item.lost_lon %}
+                                        <a href="#" class="location-link" onclick="openInMaps({{ item.lost_lat }}, {{ item.lost_lon }}, '{{ item.lost_at }}'); return false;">
+                                            {{ item.lost_at }}
+                                        </a>
+                                    {% else %}
+                                        {{ item.lost_at }}
+                                    {% endif %}
+                                    <br>
                                     <i class="fas fa-calendar"></i> {{ item.lost_at_date_time }}
                                 </small>
                             </p>
@@ -68,7 +77,15 @@
                             <h5 class="card-title">{{ item.label }}</h5>
                             <p class="card-text">
                                 <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt"></i> Found at: {{ item.found_at }}<br>
+                                    <i class="fas fa-map-marker-alt"></i> Found at: 
+                                    {% if item.found_lat and item.found_lon %}
+                                        <a href="#" class="location-link" onclick="openInMaps({{ item.found_lat }}, {{ item.found_lon }}, '{{ item.found_at }}'); return false;">
+                                            {{ item.found_at }}
+                                        </a>
+                                    {% else %}
+                                        {{ item.found_at }}
+                                    {% endif %}
+                                    <br>
                                     <i class="fas fa-calendar"></i> {{ item.found_at_date_time }}
                                 </small>
                             </p>
@@ -107,7 +124,15 @@
                             <h5 class="card-title">{{ item.label }}</h5>
                             <p class="card-text">
                                 <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt"></i> Found at: {{ item.found_at }}<br>
+                                    <i class="fas fa-map-marker-alt"></i> Found at: 
+                                    {% if item.found_lat and item.found_lon %}
+                                        <a href="#" class="location-link" onclick="openInMaps({{ item.found_lat }}, {{ item.found_lon }}, '{{ item.found_at }}'); return false;">
+                                            {{ item.found_at }}
+                                        </a>
+                                    {% else %}
+                                        {{ item.found_at }}
+                                    {% endif %}
+                                    <br>
                                     <i class="fas fa-calendar"></i> {{ item.found_at_date_time }}
                                 </small>
                             </p>

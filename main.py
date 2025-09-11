@@ -20,7 +20,7 @@ from typing import Optional, List
 import json
 
 # Configuration
-SECRET_KEY = "your-secret-key-here"  # Change this in production
+SECRET_KEY = "248749f487934"  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 UPLOAD_DIR = "static/uploads"
@@ -47,18 +47,41 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer(auto_error=False)
 
 # Load MobileNetV3 model and labels
-try:
-    interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
-    interpreter.allocate_tensors()
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-    
-    with open(LABELS_PATH, 'r') as f:
-        labels = [line.strip() for line in f.readlines()]
-except Exception as e:
-    print(f"Warning: Could not load ML model: {e}")
-    interpreter = None
-    labels = []
+interpreter = None
+labels = []
+feature_extractor = None
+
+def load_model():
+    global interpreter, labels, feature_extractor
+    try:
+        # Check if model files exist
+        if not os.path.exists(MODEL_PATH):
+            print(f"Warning: Model file not found at {MODEL_PATH}")
+            return False
+        
+        if not os.path.exists(LABELS_PATH):
+            print(f"Warning: Labels file not found at {LABELS_PATH}")
+            return False
+            
+        # Load TFLite interpreter
+        interpreter = tf.lite.Interpreter(model_path=MODEL_PATH)
+        interpreter.allocate_tensors()
+        
+        # Load labels
+        with open(LABELS_PATH, 'r', encoding='utf-8') as f:
+            labels = [line.strip() for line in f.readlines()]
+        
+        print(f"Model loaded successfully with {len(labels)} labels")
+        return True
+        
+    except Exception as e:
+        print(f"Error loading ML model: {e}")
+        interpreter = None
+        labels = []
+        return False
+
+# Initialize model
+model_loaded = load_model()
 
 # Helper functions
 def verify_password(plain_password, hashed_password):
@@ -94,36 +117,103 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 def preprocess_image(image_bytes):
     """Preprocess image for MobileNetV3"""
-    image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-    image = image.resize((224, 224))
-    image_array = np.array(image).astype(np.float32)
-    image_array = np.expand_dims(image_array, axis=0)
-    image_array = image_array / 255.0  # Normalize
-    return image_array
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        image = image.resize((224, 224))  # MobileNetV3 input size
+        image_array = np.array(image).astype(np.float32)
+        image_array = np.expand_dims(image_array, axis=0)
+        # MobileNetV3 preprocessing: normalize to [-1, 1]
+        image_array = (image_array / 127.5) - 1.0
+        return image_array
+    except Exception as e:
+        print(f"Error preprocessing image: {e}")
+        return None
+
+def extract_features(image_bytes):
+    """Extract feature vector from image using MobileNetV3"""
+    if not model_loaded or interpreter is None:
+        return None
+    
+    try:
+        processed_image = preprocess_image(image_bytes)
+        if processed_image is None:
+            return None
+            
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+        
+        interpreter.set_tensor(input_details[0]['index'], processed_image)
+        interpreter.invoke()
+        
+        # Get feature vector (before final classification layer)
+        features = interpreter.get_tensor(output_details[0]['index'])[0]
+        return features
+        
+    except Exception as e:
+        print(f"Error extracting features: {e}")
+        return None
 
 def predict_label(image_bytes):
     """Predict label using MobileNetV3"""
-    if interpreter is None:
+    if not model_loaded or interpreter is None:
+        print("Model not loaded, returning default")
         return "unknown", 0.0
     
     try:
         processed_image = preprocess_image(image_bytes)
+        if processed_image is None:
+            return "unknown", 0.0
+            
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+        
         interpreter.set_tensor(input_details[0]['index'], processed_image)
         interpreter.invoke()
         output_data = interpreter.get_tensor(output_details[0]['index'])
         
-        predicted_index = np.argmax(output_data[0])
-        confidence = float(output_data[0][predicted_index])
+        # Apply softmax to get probabilities
+        exp_scores = np.exp(output_data[0] - np.max(output_data[0]))
+        probabilities = exp_scores / np.sum(exp_scores)
+        
+        predicted_index = np.argmax(probabilities)
+        confidence = float(probabilities[predicted_index])
         
         if predicted_index < len(labels):
             label = labels[predicted_index]
+            # Clean up ImageNet labels (remove synset IDs)
+            if ' ' in label:
+                label = label.split(' ', 1)[1]  # Remove synset ID
+            label = label.split(',')[0]  # Take first synonym
         else:
             label = "unknown"
             
+        print(f"Predicted: {label} with confidence {confidence:.3f}")
         return label, confidence
+        
     except Exception as e:
         print(f"Error in prediction: {e}")
         return "unknown", 0.0
+
+def calculate_similarity(features1, features2):
+    """Calculate cosine similarity between two feature vectors"""
+    if features1 is None or features2 is None:
+        return 0.0
+    
+    try:
+        # Normalize vectors
+        norm1 = np.linalg.norm(features1)
+        norm2 = np.linalg.norm(features2)
+        
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+            
+        # Cosine similarity
+        similarity = np.dot(features1, features2) / (norm1 * norm2)
+        return float(similarity)
+        
+    except Exception as e:
+        print(f"Error calculating similarity: {e}")
+        return 0.0
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     """Calculate distance between two points in kilometers"""
@@ -283,8 +373,12 @@ async def submit_lost_item(
     with open(image_path, "wb") as f:
         f.write(image_data)
     
-    # Predict label
+    # Extract features and predict label
+    features = extract_features(image_data)
     predicted_label, confidence = predict_label(image_data)
+    
+    # Convert features to list for MongoDB storage
+    features_list = features.tolist() if features is not None else []
     
     # Create item
     item_data = {
@@ -296,6 +390,7 @@ async def submit_lost_item(
         "lost_at_date_time": lost_date_time,
         "submit_at_date_time": datetime.utcnow().isoformat(),
         "image_score": confidence,
+        "image_features": features_list,  # Store feature vector
         "lost_by": str(user["_id"]),
         "predicted_label": predicted_label,
         "extra_label": [],
@@ -364,8 +459,12 @@ async def submit_found_item(
     with open(image_path, "wb") as f:
         f.write(image_data)
     
-    # Predict label
+    # Extract features and predict label
+    features = extract_features(image_data)
     predicted_label, confidence = predict_label(image_data)
+    
+    # Convert features to list for MongoDB storage
+    features_list = features.tolist() if features is not None else []
     
     # Handle submit_to user
     submit_to_user_id = None
@@ -384,6 +483,7 @@ async def submit_found_item(
         "found_at_date_time": found_date_time,
         "submit_at_date_time": datetime.utcnow().isoformat(),
         "image_score": confidence,
+        "image_features": features_list,  # Store feature vector
         "found_by": str(user["_id"]),
         "predicted_label": predicted_label,
         "extra_label": [],
@@ -474,29 +574,52 @@ async def search_items(
     query: str = Form(...),
     radius: float = Form(1.0),
     lat: float = Form(...),
-    lon: float = Form(...)
+    lon: float = Form(...),
+    item_id: str = Form("")
 ):
     token = request.cookies.get("access_token")
     if not token:
         return RedirectResponse(url="/login", status_code=302)
     
+    # Get search item for similarity matching
+    search_item = None
+    search_features = None
+    if item_id:
+        search_item = await db.items.find_one({"_id": ObjectId(item_id)})
+        if search_item and search_item.get("image_features"):
+            search_features = np.array(search_item["image_features"])
+    
     # Search for found items matching the query
-    found_items = await db.items.find({
+    search_filter = {
         "found_by": {"$exists": True},
-        "resolved": {"$ne": True},
-        "$or": [
+        "resolved": {"$ne": True}
+    }
+    
+    # Add text search if query provided
+    if query.strip():
+        search_filter["$or"] = [
             {"label": {"$regex": query, "$options": "i"}},
             {"predicted_label": {"$regex": query, "$options": "i"}}
         ]
-    }).to_list(100)
     
-    # Filter by distance
+    found_items = await db.items.find(search_filter).to_list(200)
+    
+    # Filter by distance and calculate similarity
     nearby_items = []
     for item in found_items:
         if item.get("found_lat") and item.get("found_lon"):
             distance = calculate_distance(lat, lon, item["found_lat"], item["found_lon"])
             if distance <= radius:
                 item["distance"] = round(distance, 2)
+                
+                # Calculate image similarity if we have search features
+                if search_features is not None and item.get("image_features"):
+                    item_features = np.array(item["image_features"])
+                    similarity = calculate_similarity(search_features, item_features)
+                    item["similarity"] = round(similarity * 100, 1)  # Convert to percentage
+                else:
+                    item["similarity"] = 0.0
+                
                 # Get finder info
                 finder = await db.users.find_one({"_id": ObjectId(item["found_by"])})
                 if finder:
@@ -504,13 +627,19 @@ async def search_items(
                     item["finder_name"] = finder["name"]
                 nearby_items.append(item)
     
-    nearby_items.sort(key=lambda x: x.get("distance", float('inf')))
+    # Sort by similarity first (if available), then by distance
+    if search_features is not None:
+        nearby_items.sort(key=lambda x: (-x.get("similarity", 0), x.get("distance", float('inf'))))
+    else:
+        nearby_items.sort(key=lambda x: x.get("distance", float('inf')))
     
     return templates.TemplateResponse("search_results.html", {
         "request": request,
         "query": query,
         "radius": radius,
-        "items": nearby_items
+        "items": nearby_items,
+        "search_item": search_item,
+        "has_similarity": search_features is not None
     })
 
 @app.post("/resolve-item/{item_id}")
@@ -542,11 +671,48 @@ async def resolve_item(item_id: str, request: Request):
 @app.api_route("/predict-label", methods=["POST"])
 async def predict_label_api(image: UploadFile = File(...)):
     """API endpoint for getting ML predictions"""
-    image_data = await image.read()
-    predicted_label, confidence = predict_label(image_data)
+    try:
+        image_data = await image.read()
+        predicted_label, confidence = predict_label(image_data)
+        
+        return JSONResponse({
+            "predicted_label": predicted_label,
+            "confidence": confidence,
+            "model_loaded": model_loaded
+        })
+    except Exception as e:
+        print(f"Error in predict_label_api: {e}")
+        return JSONResponse({
+            "predicted_label": "unknown",
+            "confidence": 0.0,
+            "model_loaded": False,
+            "error": str(e)
+        })
+
+@app.get("/debug/model-status")
+async def model_status():
+    """Debug endpoint to check model status"""
     return JSONResponse({
-        "predicted_label": predicted_label,
-        "confidence": confidence
+        "model_loaded": model_loaded,
+        "model_path_exists": os.path.exists(MODEL_PATH),
+        "labels_path_exists": os.path.exists(LABELS_PATH),
+        "labels_count": len(labels),
+        "interpreter_loaded": interpreter is not None,
+        "model_path": MODEL_PATH,
+        "labels_path": LABELS_PATH,
+        "sample_labels": labels[:10] if labels else []
+    })
+
+@app.get("/debug/test-prediction")
+async def test_prediction():
+    """Debug endpoint to test model prediction without image"""
+    return JSONResponse({
+        "message": "Upload an image to /predict-label to test predictions",
+        "model_status": {
+            "loaded": model_loaded,
+            "interpreter": interpreter is not None,
+            "labels_available": len(labels)
+        }
     })
 
 if __name__ == "__main__":

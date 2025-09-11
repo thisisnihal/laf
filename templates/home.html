@@ -1,3 +1,4 @@
+<!-- templates/home.html -->
 {% extends "base.html" %}
 
 {% block title %}Home - Lost & Found{% endblock %}
@@ -30,7 +31,15 @@
                             <h5 class="card-title">{{ item.label }}</h5>
                             <p class="card-text">
                                 <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt"></i> Lost at: {{ item.lost_at }}<br>
+                                    <i class="fas fa-map-marker-alt"></i> Lost at: 
+                                    {% if item.lost_lat and item.lost_lon %}
+                                        <a href="#" class="location-link" onclick="openInMaps({{ item.lost_lat }}, {{ item.lost_lon }}, '{{ item.lost_at }}'); return false;">
+                                            {{ item.lost_at }}
+                                        </a>
+                                    {% else %}
+                                        {{ item.lost_at }}
+                                    {% endif %}
+                                    <br>
                                     <i class="fas fa-calendar"></i> {{ item.lost_at_date_time }}
                                 </small>
                             </p>

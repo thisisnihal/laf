@@ -1,3 +1,4 @@
+<!-- templates/search.html -->
 {% extends "base.html" %}
 
 {% block title %}Search Items - Lost & Found{% endblock %}
@@ -11,6 +12,8 @@
             </div>
             <div class="card-body">
                 <form method="post" id="searchForm">
+                    <input type="hidden" name="item_id" value="{% if search_item %}{{ search_item._id }}{% endif %}">
+                    
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -18,6 +21,11 @@
                                 <input type="text" class="form-control" id="query" name="query" 
                                        value="{% if search_item %}{{ search_item.label }}{% endif %}" 
                                        placeholder="e.g., wallet, phone, keys" required>
+                                {% if search_item %}
+                                    <div class="form-text text-success">
+                                        <i class="fas fa-info-circle"></i> Searching for items similar to your lost item
+                                    </div>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="col-md-3">

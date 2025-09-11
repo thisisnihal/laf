@@ -1,3 +1,4 @@
+<!-- templates/search_results.html -->
 {% extends "base.html" %}
 
 {% block title %}Search Results - Lost & Found{% endblock %}
@@ -15,6 +16,9 @@
         <div class="alert alert-info">
             <i class="fas fa-info-circle"></i> 
             Found {{ items|length }} items matching "{{ query }}" within {{ radius }} km
+            {% if has_similarity %}
+                <br><small><i class="fas fa-robot"></i> Results sorted by AI similarity to your lost item</small>
+            {% endif %}
         </div>
         
         {% if items %}
@@ -25,6 +29,11 @@
                         <div class="position-relative">
                             <img src="{{ item.image_url }}" class="card-img-top item-image" alt="{{ item.label }}">
                             <span class="badge bg-info distance-badge">{{ item.distance }} km away</span>
+                            {% if item.similarity > 0 %}
+                                <span class="badge bg-success" style="position: absolute; top: 40px; right: 10px;">
+                                    {{ item.similarity }}% match
+                                </span>
+                            {% endif %}
                         </div>
                         <div class="card-body">
                             <h5 class="card-title">{{ item.label }}</h5>
