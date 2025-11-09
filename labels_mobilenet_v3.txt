@@ -964,6 +964,7 @@ dough
 meat_loaf
 pizza
 potpie
+phone
 burrito
 red_wine
 espresso
@@ -978,6 +979,7 @@ lakeside
 promontory
 sandbar
 seashore
+smartphone
 valley
 volcano
 ballplayer
@@ -999,3 +1001,4 @@ hen-of-the-woods
 bolete
 ear
 toilet_tissue
+belt

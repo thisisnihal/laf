@@ -1,0 +1,65 @@
+wallet
+purse
+keys
+keychain
+car keys
+house keys
+id card
+credit card
+debit card
+business card
+membership card
+passport
+driver license
+student id
+badge
+lanyard
+phone
+smartphone
+iphone
+android phone
+mobile phone
+earphones
+headphones
+airpods
+bluetooth headset
+charger
+phone charger
+laptop charger
+power bank
+sunglasses
+reading glasses
+prescription glasses
+contact lens case
+watch
+smartwatch
+bracelet
+necklace
+ring
+earrings
+belt
+scarf
+hat
+cap
+beanie
+gloves
+coins
+cash
+money
+change purse
+coin purse
+pen
+pencil
+marker
+notebook
+diary
+journal
+usb drive
+flash drive
+memory card
+sd card
+ticket
+boarding pass
+receipt
+document
+paper

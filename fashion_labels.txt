@@ -1,0 +1,56 @@
+bag
+handbag
+shoulder bag
+crossbody bag
+tote bag
+clutch
+backpack
+school bag
+laptop bag
+travel bag
+duffel bag
+purse
+wallet
+coin purse
+money clip
+card holder
+belt
+leather belt
+fabric belt
+chain belt
+jewelry
+necklace
+bracelet
+ring
+earrings
+pendant
+watch
+wristwatch
+smartwatch
+fitness tracker
+sunglasses
+eyeglasses
+reading glasses
+contact lens
+scarf
+shawl
+bandana
+headband
+hair tie
+hat
+cap
+beanie
+helmet
+headwear
+gloves
+mittens
+fingerless gloves
+shoes
+sneakers
+boots
+sandals
+slippers
+sock
+stocking
+pantyhose
+tights
