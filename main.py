@@ -22,7 +22,9 @@ from concurrent.futures import ThreadPoolExecutor
 import asyncio
 import cv2
 
+
 # Import powerful ML models
+
 try:
     from ultralytics import YOLO
     YOLO_AVAILABLE = True
