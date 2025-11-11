@@ -34,9 +34,12 @@ class Config:
     DATABASE_NAME = "lost_found"
     
     # AI Model Configuration - INTERCHANGEABLE
-    MAIN_MODEL = "gemini"  # Change to "mobilenet" to swap roles
-    FALLBACK_MODEL = "mobilenet"
+    MAIN_MODEL = os.getenv("MODEL1")
+    FALLBACK_MODEL = MAIN_MODEL = os.getenv("MODEL2")
+
     CONFIDENCE_THRESHOLD = 0.7
+    
+    
     
     # Gemini Configuration
     GEMINI_API_KEY = os.getenv("GEMINI_API") 
@@ -63,6 +66,7 @@ class BaseAIModel:
         raise NotImplementedError
     
     async def predict(self, image_bytes: bytes, user_label: str = "") -> Dict[str, Any]:
+        
         """Predict item category from image"""
         raise NotImplementedError
     
